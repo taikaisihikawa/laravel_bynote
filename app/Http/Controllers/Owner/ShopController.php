@@ -45,15 +45,20 @@ class ShopController extends Controller
         return view('owner.shops.edit', compact('shop'));
     }
 
-    public function update(Request $request, $id)
-    // public function update(UploadImageRequest $request, $id)
+    // public function update(Request $request, $id)
+    public function update(UploadImageRequest $request, $id) //画像にバリデーションをかける場合
     {
+
+        $request->validate([
+            'name' => 'required|string|max:50',
+            'information' => 'required|string|max:1000',
+            'is_selling' => 'required',
+        ]);
 
         $imageFile = $request->image; //一時保存
         if (!is_null($imageFile) && $imageFile->isValid()) {
             $fileNameToStore = ImageService::upload($imageFile, 'shops'); //画像アップロードのメソッドをuploadメソッドにまとめた場合
-
-            // // Storage::putFile('public/shops', $imageFile); //リサイズなしの場合
+            // Storage::putFile('public/shops', $imageFile); //リサイズなしの場合
             // $fileName = uniqid(rand() . '_'); //以下リサイズする場合
             // $extension = $imageFile->extension();
             // $fileNameToStore = $fileName . ' . ' . $extension;
@@ -66,6 +71,18 @@ class ShopController extends Controller
             // );
         }
 
-        return redirect()->route('owner.shops.index');
+        $shop = Shop::findOrFail($id);
+        $shop->name = $request->name;
+        $shop->information = $request->information;
+        $shop->is_selling = $request->is_selling;
+        if(!is_null($imageFile) && $imageFile->isValid()){}
+            $shop->filename = $fileNameToStore;
+
+        $shop->save();
+
+        return redirect()
+        ->route('owner.shops.index')
+        ->with(['message' => '店舗情報を更新しました',
+                'status' => 'info']);
     }
 }
